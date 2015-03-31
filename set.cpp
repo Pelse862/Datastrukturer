@@ -376,20 +376,10 @@ Set<T>::Set ()
 template<typename T>
 Set<T>::Set (T n)
 {	
-	//int, next, prev
-
-	Node *newNode = new Node();
-	newNode->prev = head;
-	newNode->next = tail;
-	head->next = newNode;
-	tail->prev = newNode;
-	//newNode->counter = n;
+	init();
 	
+	insert(tail, n);
 	
-	//prev = p->prev->next = newNode;
-	//tail->prev = newNode;
-	//tail->prev->next = newNode;
-	 
 }
 
 
@@ -397,7 +387,14 @@ Set<T>::Set (T n)
 template<typename T>
 Set<T>::Set (T a[], int n)
 {
-    //ADD CODE
+	init();
+	Node *temp = head;
+	for (int k = 0; k < n; k++)
+	{
+		insert(temp->next, a[k]);
+		temp = temp->next;
+		
+	}
 }
 
 
@@ -405,7 +402,14 @@ Set<T>::Set (T a[], int n)
 template<typename T>
 Set<T>::Set (const Set& b)
 {
-    //ADD CODE
+	init();
+	Node *b_temp = b.head->next;
+
+	while (b_temp != b.tail)
+	{
+		insert(tail,b_temp->value);
+		b_temp = b_temp->next;
+	}
 }
 
 
@@ -421,8 +425,19 @@ Set<T>::~Set ()
 template<typename T>
 const Set<T>& Set<T>::operator=(const Set& b)
 {
-    //ADD CODE
-    return *this; //delete this code
+
+	this->clear();
+	
+	Node *thisTemp = head;
+	Node *b_temp = b.head->next;
+
+	while (b_temp != b.tail)
+	{
+		insert(tail, b_temp->value);
+		b_temp = b_temp->next;
+	}
+
+    return *this; 
 }
 
 
@@ -430,8 +445,9 @@ const Set<T>& Set<T>::operator=(const Set& b)
 template<typename T>
 bool Set<T>::is_empty () const
 {
-   //ADD CODE
-   return false; //delete this code
+	if (this->head->next == this->tail)
+		return true;
+	return false;
 }
 
 
@@ -439,7 +455,11 @@ bool Set<T>::is_empty () const
 template<typename T>
 bool Set<T>::is_member (T val) const
 {
-   //ADD CODE
+	Node *n = head->next;
+	while (n != tail){
+		if (n->value == val){return true;}
+		n = n->next;
+	}
    return false; //delete this code
 }
 
@@ -448,8 +468,8 @@ bool Set<T>::is_member (T val) const
 template<typename T>
 int Set<T>::cardinality() const
 {
-    //ADD CODE
-    return 0; //delete this code
+	
+    return counter; //-1 for tail
 }
 
 
@@ -457,7 +477,16 @@ int Set<T>::cardinality() const
 template<typename T>
 void Set<T>::clear()
 {
-    //ADD CODE
+	Node *current = head->next;
+	while (current != tail){
+		Node *newNode = current->next;
+		delete current;
+		current = newNode;
+	}
+
+	this->head->next = tail;
+	this->tail->prev = head;
+	counter = 0;
 }
 
 //Return true, if the set is a subset of b, otherwise false
@@ -465,8 +494,16 @@ void Set<T>::clear()
 template<typename T>
 bool Set<T>::operator<=(const Set& b) const
 {
-    //ADD CODE
-    return false; //delete this code
+	Node *thishead = head->next;
+	//Node *bhead = b.head->next;
+
+	while (thishead != tail){
+		if (!b.is_member(thishead->value)){
+			return false;
+		}
+		thishead = thishead->next;
+	}
+    return true; //delete this code
 }
 
 
@@ -475,8 +512,19 @@ bool Set<T>::operator<=(const Set& b) const
 template<typename T>
 bool Set<T>::operator==(const Set& b) const
 {
-    //ADD CODE
-    return false; //delete this code
+	Set newSet;
+	Node *node_b = b.head;
+	//Node *node_this = head;
+
+	Node *newNode = newSet.head;
+
+	//använder mig av föregående oppertor, Delmängderan måste finnas i varadra för att det ska bli true
+	if (b <= *this && *this <= b){
+		return true;
+	}
+	else{
+		return false;
+	}
 }
 
 
@@ -485,8 +533,15 @@ bool Set<T>::operator==(const Set& b) const
 template<typename T>
 bool Set<T>::operator<(const Set& b) const
 {
-    //ADD CODE
-    return false; //delete this code
+	Node *temp_b = b.head;
+	Node *temp_one = head;
+
+	if (*this <= b && !(b <= *this)){
+		return true;
+	}
+	else{
+		return false;
+	}
 }
 
 
@@ -502,7 +557,7 @@ Set<T>& Set<T>::insert(Node *p, T val)
 	Node* newNode = new Node(val, p, p->prev); 
 	//länkar till den nya noden från listan
 	p->prev = p->prev->next = newNode;
-
+	counter++;
     return *this; //delete this code
 }
 
@@ -512,9 +567,12 @@ template<typename T>
 Set<T>& Set<T>::erase(Node *p)
 {
 	
-	Node *newNode = (p->prev->val, p->prev, p->prev->prev);
-	newNode = p->next;
+	Node *prevNode = p->prev;
+	Node *nextNode = p->next;
+	prevNode->next = nextNode;
+	nextNode->prev = prevNode;
 	delete p;
+	counter--;
     return *this; //delete this code
 }
 
@@ -536,21 +594,26 @@ void Set<T>::init()
 //Display all elements in the Set
 template<typename T>
 void Set<T>::print(ostream& os) const
-{
+{	
+	
+
 	Node *first = head->next;
-	if (!first){
+	//tail = new Node();
+	if (first == tail){
 		os << "list is empty" << '\n';
 	}
 	else
 	{
-		for (Node *p = first; p; p = p->next)
+		while (first != tail)
 		{
 			//if (p->value == 0)break;
-			os << p->value << " ";
+			os << first->value << " ";
+			first = first->next;
 
 		}
 				
 	}
+
 }
 
 
@@ -559,8 +622,26 @@ void Set<T>::print(ostream& os) const
 template<typename T>
 Set<T> Set<T>::_union(const Set& b) const
 {
-    //ADD CODE
-    return *this; //delete this code
+
+	Set newset(*this);
+	Node* bnode = b.head->next;
+	Node *setNode = newset.head->next;
+
+	while (bnode != b.tail){
+		
+		if (!newset.is_member(bnode->value)){
+			
+			
+			while (setNode != newset.tail && setNode->value < bnode->value){
+					
+				setNode = setNode->next;
+
+			}
+			newset.insert(setNode, bnode->value);
+		}
+		bnode = bnode->next;
+	}
+	return newset;
 }
 
 
@@ -569,8 +650,19 @@ Set<T> Set<T>::_union(const Set& b) const
 template<typename T>
 Set<T> Set<T>::_intersection(const Set& b) const
 {
-    //ADD CODE
-    return *this; //delete this code
+	Set newset;
+	newset.init();
+	Set (*this);
+	Node* anode = a.head->next;
+
+	while (bnode != b.tail){
+
+		if (b.is_member(bnode->value)){
+			newset.insert(newset.tail, bnode->value);
+		}
+		anode = anode->next;
+	}
+	return newset;
 }
 
 
@@ -579,8 +671,21 @@ Set<T> Set<T>::_intersection(const Set& b) const
 template<typename T>
 Set<T> Set<T>::_difference(const Set& b) const
 {
-    //ADD CODE
-    return *this; //delete this code
+	Set a(*this);
+	Set newset;
+	newset.init();
+	Node* bnode = b.head->next;
+	Node *setNode = newset.tail;
+
+	while (bnode != b.tail){
+
+		if (!a.is_member(bnode->value)){
+
+			newset.insert(setNode, bnode->value);
+		}
+		bnode = bnode->next;
+	}
+	return newset;
 }
 
 
