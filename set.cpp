@@ -377,7 +377,6 @@ template<typename T>
 Set<T>::Set (T n)
 {	
 	init();
-	
 	insert(tail, n);
 	
 }
@@ -416,8 +415,12 @@ Set<T>::Set (const Set& b)
 //Destructor
 template<typename T>
 Set<T>::~Set ()
-{
-    //ADD CODE
+{	
+	//empty set
+	this->clear();
+	//delet head and tail
+	delete head->next;
+	delete head;
 }
 
 
@@ -495,14 +498,26 @@ template<typename T>
 bool Set<T>::operator<=(const Set& b) const
 {
 	Node *thishead = head->next;
+	Node *bnode = b.head->next;
 	//Node *bhead = b.head->next;
 
 	while (thishead != tail){
-		if (!b.is_member(thishead->value)){
+		if(thishead->value == bnode->value)
+		{
+			thishead = thishead->next;
+			bnode=bnode->next;
+		}
+		else if(thishead->value > bnode->value)
+		{
+			bnode=bnode->next;
+		}
+		else
+		{
 			return false;
 		}
-		thishead = thishead->next;
+		
 	}
+
     return true; //delete this code
 }
 
@@ -582,11 +597,8 @@ void Set<T>::init()
 {	
 	head = new Node();
 	tail = new Node();
-	//head = tail;
-	
 	head->next = tail;
 	tail->prev = head;
-	
 	counter = 0;		
 }
 
@@ -622,26 +634,52 @@ void Set<T>::print(ostream& os) const
 template<typename T>
 Set<T> Set<T>::_union(const Set& b) const
 {
+	
+	Set *newSet = new Set;
+	newSet->init();
+	Node *thisNode = this->head->next;
+	//Node *newNode = head->next;
+	Node *bNode = b.head;
+	//Node* bnode = b.head->next;
 
-	Set newset(*this);
-	Node* bnode = b.head->next;
-	Node *setNode = newset.head->next;
-
-	while (bnode != b.tail){
-		
-		if (!newset.is_member(bnode->value)){
-			
-			
-			while (setNode != newset.tail && setNode->value < bnode->value){
-					
-				setNode = setNode->next;
-
-			}
-			newset.insert(setNode, bnode->value);
+	//Merge S1 with S2
+	while (thisNode != tail && bNode != b.tail)
+	{
+		if (thisNode->value < bNode->value)
+		{
+			newSet->insert(newSet->tail, thisNode->value);
+			thisNode = thisNode->next;
 		}
-		bnode = bnode->next;
+		else if (thisNode->value > bNode->value)
+		{
+			newSet->insert(newSet->tail, bNode->value);
+			bNode = bNode->next;
+		}
+		else
+		{
+			newSet->insert(newSet->tail, bNode->value);
+			bNode = bNode->next;
+			thisNode = thisNode->next;
+		}
 	}
-	return newset;
+
+	//copy any remaining values from S1 to S3
+	while (thisNode != tail)
+	{
+		newSet->insert(newSet->tail, thisNode->value);
+		thisNode = thisNode->next;
+	}
+
+	//copy any remaining values from S2 to S3
+	while (bNode != b.tail)
+	{
+		newSet->insert(newSet->tail, bNode->value);
+		bNode = bNode->next;
+	}
+
+	return *newSet;
+
+
 }
 
 
@@ -650,19 +688,29 @@ Set<T> Set<T>::_union(const Set& b) const
 template<typename T>
 Set<T> Set<T>::_intersection(const Set& b) const
 {
-	Set newset;
-	newset.init();
-	Set (*this);
-	Node* anode = a.head->next;
+	Set newSet;
 
-	while (bnode != b.tail){
+	Node *thisNode = this->head->next;
+	Node *bNode = b.head;
 
-		if (b.is_member(bnode->value)){
-			newset.insert(newset.tail, bnode->value);
+	while (thisNode != tail && bNode != b.tail)
+	{
+		if (thisNode->value == bNode->value)
+		{
+			newSet.insert(newSet.tail, thisNode->value);
+			thisNode = thisNode->next;
+			bNode = bNode->next;
 		}
-		anode = anode->next;
+		else if (thisNode->value > bNode->value)
+		{
+			bNode = bNode->next;
+		}
+		else
+		{
+			thisNode = thisNode->next;
+		}
 	}
-	return newset;
+	return newSet;
 }
 
 
@@ -671,21 +719,31 @@ Set<T> Set<T>::_intersection(const Set& b) const
 template<typename T>
 Set<T> Set<T>::_difference(const Set& b) const
 {
-	Set a(*this);
-	Set newset;
-	newset.init();
-	Node* bnode = b.head->next;
-	Node *setNode = newset.tail;
+	Set newSet(*this);
+	Node *thisNode = newSet.head->next;
+	Node *bNode = b.head;
 
-	while (bnode != b.tail){
-
-		if (!a.is_member(bnode->value)){
-
-			newset.insert(setNode, bnode->value);
+	while (thisNode != newSet.tail && bNode != b.tail)
+	{
+		//Node* tmp = thisNode;
+		if (thisNode->value < bNode->value)
+		{	
+			thisNode = thisNode->next;
 		}
-		bnode = bnode->next;
+		else if (thisNode->value > bNode->value)
+		{
+			bNode = bNode->next;
+		}
+		else
+		{
+			thisNode->prev->next = thisNode->next;
+			thisNode = thisNode->next;
+			bNode = bNode->next;
+		}
 	}
-	return newset;
+
+	return newSet;
+	
 }
 
 
